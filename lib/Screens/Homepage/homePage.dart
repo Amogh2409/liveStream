@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:taskmanagement/constants.dart';
-
+import 'package:video_player/video_player.dart';
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -10,6 +10,40 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+    final List<String> _videoUrls = [
+    'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4',
+    'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4',
+    'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_5mb.mp4',
+    'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_10mb.mp4',
+    'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_30mb.mp4',
+  ];
+
+  late List<VideoPlayerController> _controllers;
+  late List<bool> _isPlaying;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Create instances of VideoPlayerController and initialize them
+    _controllers = _videoUrls
+        .map((url) => VideoPlayerController.network(url))
+        .toList();
+
+    Future.wait(_controllers.map((controller) => controller.initialize()))
+        .then((_) {
+      setState(() {});
+    });
+
+    _isPlaying = List.filled(_videoUrls.length, false);
+  }
+
+  @override
+  void dispose() {
+    // Dispose the controllers when the widget is removed from the tree
+    _controllers.forEach((controller) => controller.dispose());
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -49,9 +83,7 @@ class _HomePageState extends State<HomePage> {
                 Container(
                   margin: const EdgeInsets.only(right: 20, top: 15),
                   child: TextButton(
-                    onPressed: () {
-                      
-                    },
+                    onPressed: () {},
                     child: Text(
                       "Go Live",
                       style: TextStyle(
@@ -75,7 +107,39 @@ class _HomePageState extends State<HomePage> {
               thickness: 0.6,
             ),
             //I need a list view here to show the list of the videos
- 
+            ListView.builder(
+        itemCount: _videoUrls.length,
+        itemBuilder: (context, index) {
+          final controller = _controllers[index];
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                // Toggle the video playback state on tap
+                if (controller.value.isPlaying) {
+                  controller.pause();
+                  _isPlaying[index] = false;
+                } else {
+                  controller.play();
+                  _isPlaying[index] = true;
+                }
+              });
+            },
+            child:  Stack(
+              alignment: Alignment.center,
+              children: [
+                VideoPlayer(controller),
+                if (!_isPlaying[index])
+                  const Icon(
+                    Icons.play_circle_fill,
+                    size: 64,
+                    color: Colors.white,
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
             Expanded(child: Container()),
             BottomNavBarFb1()
           ],
@@ -107,7 +171,11 @@ class BottomNavBarFb1 extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconBottomBar(
-                  text: "", icon: Icons.play_circle_outline_outlined, selected: true, onPressed: () {}, ),
+                text: "",
+                icon: Icons.play_circle_outline_outlined,
+                selected: true,
+                onPressed: () {},
+              ),
               IconBottomBar(
                   text: "Search",
                   icon: Icons.search_outlined,
